@@ -1,0 +1,41 @@
+{
+    title = iOS26Spoofer;
+    items = (
+        {
+            cell = PSGroupCell;
+            label = "iOS 26 Spoofer";
+            footerText = "Runtime spoofing only. This does not install iOS 26 frameworks or change system files.";
+        },
+        {
+            cell = PSSwitchCell;
+            label = Enabled;
+            defaults = "com.roboa.ios26spoofer";
+            key = enabled;
+            default = 1;
+            PostNotification = "com.roboa.ios26spoofer/preferences.changed";
+        },
+        {
+            cell = PSGroupCell;
+            label = Scope;
+            footerText = "About Only changes Settings > General > About. Apps Only changes version APIs in UIKit apps except Settings. Both enables both scopes.";
+        },
+        {
+            cell = PSSegmentCell;
+            label = "Spoof In";
+            defaults = "com.roboa.ios26spoofer";
+            key = scope;
+            default = about;
+            validTitles = (
+                "About Only",
+                "Apps Only",
+                Both
+            );
+            validValues = (
+                about,
+                apps,
+                both
+            );
+            PostNotification = "com.roboa.ios26spoofer/preferences.changed";
+        }
+    );
+}

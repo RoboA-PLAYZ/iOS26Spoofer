@@ -1,0 +1,12 @@
+{
+    CFBundleDisplayName = iOS26Spoofer;
+    CFBundleDevelopmentRegion = English;
+    CFBundleExecutable = iOS26SpooferPrefs;
+    CFBundleIdentifier = "com.roboa.ios26spoofer.preferences";
+    CFBundleInfoDictionaryVersion = "6.0";
+    CFBundleName = iOS26SpooferPrefs;
+    CFBundlePackageType = BNDL;
+    CFBundleShortVersionString = "1.1.0";
+    CFBundleVersion = "1.1.0";
+    NSPrincipalClass = I26RootListController;
+}

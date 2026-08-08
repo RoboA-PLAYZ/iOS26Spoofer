@@ -1,6 +1,8 @@
 {
     Filter = {
         Bundles = (
+            "com.apple.UIKit",
+            "com.apple.UIKitCore",
             "com.apple.Preferences",
             "com.apple.AppStore"
         );

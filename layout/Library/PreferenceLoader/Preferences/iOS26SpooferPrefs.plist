@@ -1,0 +1,8 @@
+{
+    entry = {
+        bundle = iOS26SpooferPrefs;
+        cell = PSLinkCell;
+        detail = I26RootListController;
+        label = iOS26Spoofer;
+    };
+}

@@ -1,9 +1,9 @@
 Package: com.roboa.ios26spoofer
 Name: iOS26Spoofer
-Version: 1.0.0
+Version: 1.1.0
 Architecture: iphoneos-arm64
-Description: Spoofs the reported iPadOS version as 26.0 for Settings and App Store.
+Description: Customizable runtime iPadOS 26.0 version spoofer.
 Maintainer: RoboA
 Author: RoboA
 Section: Tweaks
-Depends: mobilesubstrate
+Depends: mobilesubstrate, preferenceloader
