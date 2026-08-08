@@ -1,0 +1,45 @@
+name: Build iOS26Spoofer
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Theos
+        run: |
+          export THEOS="$HOME/theos"
+          git clone --recursive https://github.com/theos/theos.git "$THEOS"
+          echo "THEOS=$THEOS" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: brew install make ldid xz
+
+      - name: Download iOS SDK
+        run: |
+          git clone --depth=1 https://github.com/theos/sdks.git /tmp/sdks
+          mkdir -p "$THEOS/sdks"
+          cp -R /tmp/sdks/*.sdk "$THEOS/sdks/"
+
+      - name: Build package
+        run: gmake clean package FINALPACKAGE=1 DEBUG=0
+
+      - name: Verify package
+        run: |
+          test -n "$(find packages -maxdepth 1 -name '*.deb' -print -quit)"
+          ls -lh packages/*.deb
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS26Spoofer-deb
+          path: packages/*.deb
+          if-no-files-found: error
