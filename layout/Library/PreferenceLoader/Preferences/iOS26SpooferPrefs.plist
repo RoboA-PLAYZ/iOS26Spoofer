@@ -1,8 +1,19 @@
-{
-    entry = {
-        bundle = iOS26SpooferPrefs;
-        cell = PSLinkCell;
-        detail = I26RootListController;
-        label = iOS26Spoofer;
-    };
-}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>entry</key>
+    <dict>
+        <key>bundle</key>
+        <string>iOS26SpooferPrefs</string>
+        <key>cell</key>
+        <string>PSLinkCell</string>
+        <key>detail</key>
+        <string>I26RootListController</string>
+        <key>isController</key>
+        <true/>
+        <key>label</key>
+        <string>iOS26Spoofer</string>
+    </dict>
+</dict>
+</plist>

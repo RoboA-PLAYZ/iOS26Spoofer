@@ -42,7 +42,7 @@ reopen Settings or the affected app after changing an option.
 Command-line installation:
 
 ```sh
-dpkg -i com.roboa.ios26spoofer_1.1.0_iphoneos-arm64.deb
+dpkg -i com.roboa.ios26spoofer_1.1.1_iphoneos-arm64.deb
 ```
 
 ## Important

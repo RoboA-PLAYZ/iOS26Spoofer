@@ -34,8 +34,22 @@ jobs:
 
       - name: Verify package
         run: |
-          test -n "$(find packages -maxdepth 1 -name '*.deb' -print -quit)"
-          ls -lh packages/*.deb
+          package="$(find packages -maxdepth 1 -name '*.deb' -print -quit)"
+          test -n "$package"
+          ls -lh "$package"
+
+          verify_dir="$(mktemp -d)"
+          (cd "$verify_dir" && ar -x "$GITHUB_WORKSPACE/$package")
+          data_archive="$(find "$verify_dir" -maxdepth 1 -name 'data.tar*' -print -quit)"
+          test -n "$data_archive"
+          tar -tf "$data_archive" | tee "$verify_dir/package-files.txt"
+
+          grep -q 'Library/PreferenceLoader/Preferences/iOS26SpooferPrefs.plist$' \
+            "$verify_dir/package-files.txt"
+          grep -q 'Library/PreferenceBundles/iOS26SpooferPrefs.bundle/iOS26SpooferPrefs$' \
+            "$verify_dir/package-files.txt"
+          grep -q 'Library/PreferenceBundles/iOS26SpooferPrefs.bundle/Root.plist$' \
+            "$verify_dir/package-files.txt"
 
       - name: Upload package
         uses: actions/upload-artifact@v4
