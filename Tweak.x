@@ -2,6 +2,10 @@
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 
+// MobileGestalt is private and its declaration is not shipped in every SDK.
+// Logos still needs a prototype in scope in order to hook the function.
+CFTypeRef MGCopyAnswer(CFStringRef key) CF_RETURNS_RETAINED;
+
 static NSString *const kSpoofedVersion = @"26.0";
 static NSString *const kSpoofedVersionString = @"Version 26.0 (Build 23A000)";
 
