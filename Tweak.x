@@ -1,10 +1,13 @@
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
+#import <substrate.h>
+#import <dlfcn.h>
 
-// MobileGestalt is private and its declaration is not shipped in every SDK.
-// Logos still needs a prototype in scope in order to hook the function.
-CFTypeRef MGCopyAnswer(CFStringRef key) CF_RETURNS_RETAINED;
+typedef CFTypeRef (*MGCopyAnswerFunction)(CFStringRef key);
+
+static MGCopyAnswerFunction OriginalMGCopyAnswer;
+static void *MobileGestaltHandle;
 
 static NSString *const kSpoofedVersion = @"26.0";
 static NSString *const kSpoofedVersionString = @"Version 26.0 (Build 23A000)";
@@ -49,7 +52,7 @@ static BOOL SpoofedVersionIsAtLeast(NSOperatingSystemVersion requestedVersion) {
 
 %end
 
-%hookf(CFTypeRef, MGCopyAnswer, CFStringRef key) {
+static CFTypeRef ReplacedMGCopyAnswer(CFStringRef key) {
     if (key && CFGetTypeID(key) == CFStringGetTypeID()) {
         if (CFStringCompare(key, CFSTR("ProductVersion"), 0) == kCFCompareEqualTo) {
             // MGCopyAnswer follows the Copy rule, so return an owned object.
@@ -57,5 +60,29 @@ static BOOL SpoofedVersionIsAtLeast(NSOperatingSystemVersion requestedVersion) {
         }
     }
 
-    return %orig;
+    return OriginalMGCopyAnswer ? OriginalMGCopyAnswer(key) : NULL;
+}
+
+%ctor {
+    const char *paths[] = {
+        "/usr/lib/libMobileGestalt.dylib",
+        "/System/Library/PrivateFrameworks/MobileGestalt.framework/MobileGestalt",
+    };
+
+    for (size_t index = 0; index < sizeof(paths) / sizeof(paths[0]); index++) {
+        MobileGestaltHandle = dlopen(paths[index], RTLD_LAZY);
+        if (MobileGestaltHandle) {
+            break;
+        }
+    }
+
+    if (!MobileGestaltHandle) {
+        return;
+    }
+
+    void *symbol = dlsym(MobileGestaltHandle, "MGCopyAnswer");
+    if (symbol) {
+        MSHookFunction(symbol, (void *)&ReplacedMGCopyAnswer,
+                       (void **)&OriginalMGCopyAnswer);
+    }
 }
