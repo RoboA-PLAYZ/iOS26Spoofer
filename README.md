@@ -22,7 +22,7 @@ Open Settings and select **iOS26Spoofer**. The scope choices are:
 - **Apps Only**: spoof version APIs in UIKit apps, excluding Settings.
 - **Both**: spoof the About page and UIKit apps.
 
-The default is **About Only** to minimize compatibility problems.
+The default is **Both**. Choose About Only if app compatibility problems occur.
 
 Changes are broadcast immediately, but an app may cache its version. Close and
 reopen Settings or the affected app after changing an option.
@@ -42,7 +42,7 @@ reopen Settings or the affected app after changing an option.
 Command-line installation:
 
 ```sh
-dpkg -i com.roboa.ios26spoofer_1.1.1_iphoneos-arm64.deb
+dpkg -i com.roboa.ios26spoofer_1.1.2_iphoneos-arm64.deb
 ```
 
 ## Important

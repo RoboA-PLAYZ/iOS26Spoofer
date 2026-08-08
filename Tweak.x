@@ -26,7 +26,7 @@ typedef NS_ENUM(NSInteger, SpoofScope) {
 };
 
 static BOOL PreferencesEnabled = YES;
-static SpoofScope PreferencesScope = SpoofScopeAboutOnly;
+static SpoofScope PreferencesScope = SpoofScopeBoth;
 
 static void ReloadPreferences(void) {
     CFPreferencesAppSynchronize(kPreferencesDomain);
@@ -42,12 +42,12 @@ static void ReloadPreferences(void) {
 
     CFTypeRef scope = CFPreferencesCopyAppValue(CFSTR("scope"),
                                                  kPreferencesDomain);
-    PreferencesScope = SpoofScopeAboutOnly;
+    PreferencesScope = SpoofScopeBoth;
     if (scope && CFGetTypeID(scope) == CFStringGetTypeID()) {
-        if (CFEqual(scope, CFSTR("apps"))) {
+        if (CFEqual(scope, CFSTR("about"))) {
+            PreferencesScope = SpoofScopeAboutOnly;
+        } else if (CFEqual(scope, CFSTR("apps"))) {
             PreferencesScope = SpoofScopeAppsOnly;
-        } else if (CFEqual(scope, CFSTR("both"))) {
-            PreferencesScope = SpoofScopeBoth;
         }
     }
     if (scope) {
@@ -183,6 +183,10 @@ static CFDictionaryRef ReplacedCFCopySystemVersionDictionary(void) {
 }
 
 %ctor {
+    // A custom constructor disables Logos' automatic default-group setup.
+    // Initialize the UIDevice and NSProcessInfo hooks explicitly.
+    %init;
+
     ReloadPreferences();
     CFNotificationCenterAddObserver(
         CFNotificationCenterGetDarwinNotifyCenter(), NULL, PreferencesChanged,

@@ -24,7 +24,7 @@
             label = "Spoof In";
             defaults = "com.roboa.ios26spoofer";
             key = scope;
-            default = about;
+            default = both;
             validTitles = (
                 "About Only",
                 "Apps Only",
