@@ -8,6 +8,11 @@
         },
         {
             cell = PSButtonCell;
+            label = "Copy Log";
+            action = copyLog;
+        },
+        {
+            cell = PSButtonCell;
             label = "Clear Log";
             action = clearLog;
         }

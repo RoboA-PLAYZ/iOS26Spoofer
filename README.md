@@ -6,8 +6,9 @@ It does not modify the device's system-version files.
 
 ## Targets
 
-- Settings About page (`com.apple.Preferences`)
-- UIKit apps, including App Store, when Apps Only or Both is selected
+- Settings About page (`com.apple.Preferences`), including a direct label fallback
+- UIKit apps and the App Store's StoreKit product-page processes when Apps Only
+  or Both is selected
 - `UIDevice.systemVersion` returns `26.0`
 - `NSProcessInfo.operatingSystemVersion` returns `26.0.0`
 - `NSProcessInfo.operatingSystemVersionString` returns an iOS 26 version string
@@ -26,7 +27,8 @@ The tweak is disabled by default. Turning it on triggers a respring. Its default
 scope is **Both**; choose About Only if app compatibility problems occur.
 
 The **Runtime Log** page records process loading, hook installation, and the
-first call to each version API so failed interception can be diagnosed.
+first call to each version API so failed interception can be diagnosed. Use
+**Copy Log** there to copy the complete diagnostic text.
 
 Changes are broadcast immediately, but an app may cache its version. Close and
 reopen Settings or the affected app after changing an option.
@@ -46,11 +48,14 @@ reopen Settings or the affected app after changing an option.
 Command-line installation:
 
 ```sh
-dpkg -i com.roboa.ios26spoofer_1.2.0_iphoneos-arm64.deb
+dpkg -i com.roboa.ios26spoofer_1.2.1_iphoneos-arm64.deb
 ```
 
 ## Important
 
 This does not provide real iPadOS 26 frameworks or APIs. Software requiring APIs
 that are unavailable on the installed OS can still fail to install, launch, or
-function. Removing the tweak and respringing restores the real reported version.
+function. The App Store also uses each app's `MinimumOSVersion` metadata when it
+decides compatibility, so changing runtime version answers is not a guaranteed
+installation bypass. Removing the tweak and respringing restores the real
+reported version.

@@ -15,6 +15,7 @@ static void *MobileGestaltHandle;
 
 static NSString *const kSpoofedVersion = @"26.0";
 static NSString *const kSpoofedVersionString = @"Version 26.0 (Build 23A000)";
+static NSString *RealSystemVersion;
 static CFStringRef const kPreferencesDomain = CFSTR("com.roboa.ios26spoofer");
 static CFStringRef const kPreferencesChangedNotification =
     CFSTR("com.roboa.ios26spoofer/preferences.changed");
@@ -172,6 +173,30 @@ static BOOL LoggedAtLeastVersionHook;
 static BOOL LoggedMGCopyAnswerHook;
 static BOOL LoggedMGGetStringAnswerHook;
 static BOOL LoggedSystemVersionDictionaryHook;
+static BOOL LoggedAboutUIHook;
+
+static BOOL IsSettingsProcess(void) {
+    return [[[NSBundle mainBundle] bundleIdentifier]
+        isEqualToString:@"com.apple.Preferences"];
+}
+
+static NSString *SpoofedAboutLabelText(NSString *text) {
+    if (!text || !RealSystemVersion || !IsSettingsProcess() ||
+        !ShouldSpoofCurrentProcess() ||
+        [text rangeOfString:RealSystemVersion].location == NSNotFound) {
+        return text;
+    }
+
+    if (!LoggedAboutUIHook) {
+        LoggedAboutUIHook = YES;
+        AppendDiagnostic([NSString stringWithFormat:
+            @"About label rewritten; original=%@ spoofed=%@",
+            text, [text stringByReplacingOccurrencesOfString:RealSystemVersion
+                                                  withString:kSpoofedVersion]]);
+    }
+    return [text stringByReplacingOccurrencesOfString:RealSystemVersion
+                                           withString:kSpoofedVersion];
+}
 
 %hook UIDevice
 
@@ -223,6 +248,29 @@ static BOOL LoggedSystemVersionDictionaryHook;
     return spoof
         ? SpoofedVersionIsAtLeast(requestedVersion)
         : %orig;
+}
+
+%end
+
+%hook UILabel
+
+- (void)setText:(NSString *)text {
+    %orig(SpoofedAboutLabelText(text));
+}
+
+- (void)setAttributedText:(NSAttributedString *)text {
+    NSString *replacement = SpoofedAboutLabelText([text string]);
+    if (text && ![replacement isEqualToString:[text string]]) {
+        NSMutableAttributedString *rewritten = [text mutableCopy];
+        NSRange range = [[rewritten string] rangeOfString:RealSystemVersion];
+        while (range.location != NSNotFound) {
+            [rewritten replaceCharactersInRange:range withString:kSpoofedVersion];
+            range = [[rewritten string] rangeOfString:RealSystemVersion];
+        }
+        %orig(rewritten);
+        return;
+    }
+    %orig(text);
 }
 
 %end
@@ -297,16 +345,19 @@ static CFDictionaryRef ReplacedCFCopySystemVersionDictionary(void) {
 }
 
 %ctor {
+    RealSystemVersion = [[[UIDevice currentDevice] systemVersion] copy];
     ReloadPreferences();
     AppendDiagnostic([NSString stringWithFormat:
-        @"tweak loaded; bundle=%@ enabled=%@ scope=%@",
+        @"tweak 1.2.1 loaded; bundle=%@ real=%@ enabled=%@ scope=%@",
         [[NSBundle mainBundle] bundleIdentifier] ?: @"?",
+        RealSystemVersion ?: @"?",
         PreferencesEnabled ? @"yes" : @"no", ScopeName()]);
 
     // A custom constructor disables Logos' automatic default-group setup.
     // Initialize the UIDevice and NSProcessInfo hooks explicitly.
     %init;
     AppendDiagnostic(@"Logos UIDevice/NSProcessInfo hooks initialized");
+
     CFNotificationCenterAddObserver(
         CFNotificationCenterGetDarwinNotifyCenter(), NULL, PreferencesChanged,
         kPreferencesChangedNotification, NULL,

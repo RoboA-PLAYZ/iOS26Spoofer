@@ -1,5 +1,6 @@
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
+#import <UIKit/UIKit.h>
 #import <spawn.h>
 
 extern char **environ;
@@ -115,6 +116,18 @@ static void Respring(void) {
                              kPreferencesDomain);
     CFPreferencesAppSynchronize(kPreferencesDomain);
     [self updateLogText];
+}
+
+- (void)copyLog {
+    [[UIPasteboard generalPasteboard] setString:[self currentLogText]];
+    UIAlertController *confirmation = [UIAlertController
+        alertControllerWithTitle:@"Log Copied"
+                         message:@"The runtime log is now on the clipboard."
+                  preferredStyle:UIAlertControllerStyleAlert];
+    [confirmation addAction:[UIAlertAction actionWithTitle:@"OK"
+                                                     style:UIAlertActionStyleDefault
+                                                   handler:nil]];
+    [self presentViewController:confirmation animated:YES completion:nil];
 }
 
 @end

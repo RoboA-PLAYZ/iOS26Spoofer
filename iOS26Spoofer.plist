@@ -4,7 +4,10 @@
             "com.apple.UIKit",
             "com.apple.UIKitCore",
             "com.apple.Preferences",
-            "com.apple.AppStore"
+            "com.apple.AppStore",
+            "com.apple.ios.StoreKitUIService",
+            "com.apple.AppStore.ProductPageExtension",
+            "com.apple.StoreKitUIService"
         );
     };
 }
