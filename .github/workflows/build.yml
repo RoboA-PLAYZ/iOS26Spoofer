@@ -50,6 +50,8 @@ jobs:
             "$verify_dir/package-files.txt"
           grep -q 'Library/PreferenceBundles/iOS26SpooferPrefs.bundle/Root.plist$' \
             "$verify_dir/package-files.txt"
+          grep -q 'Library/PreferenceBundles/iOS26SpooferPrefs.bundle/Log.plist$' \
+            "$verify_dir/package-files.txt"
 
       - name: Upload package
         uses: actions/upload-artifact@v4

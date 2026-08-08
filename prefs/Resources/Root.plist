@@ -11,7 +11,7 @@
             label = Enabled;
             defaults = "com.roboa.ios26spoofer";
             key = enabled;
-            default = 1;
+            default = 0;
             PostNotification = "com.roboa.ios26spoofer/preferences.changed";
         },
         {
@@ -36,6 +36,17 @@
                 both
             );
             PostNotification = "com.roboa.ios26spoofer/preferences.changed";
+        },
+        {
+            cell = PSGroupCell;
+            label = Diagnostics;
+            footerText = "Turn the tweak on to respring automatically. Then open About and App Store before checking the Runtime Log.";
+        },
+        {
+            cell = PSLinkCell;
+            label = "Runtime Log";
+            detail = I26LogListController;
+            isController = 1;
         }
     );
 }

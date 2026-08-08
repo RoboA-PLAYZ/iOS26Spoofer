@@ -25,15 +25,77 @@ typedef NS_ENUM(NSInteger, SpoofScope) {
     SpoofScopeBoth,
 };
 
-static BOOL PreferencesEnabled = YES;
+static BOOL PreferencesEnabled = NO;
 static SpoofScope PreferencesScope = SpoofScopeBoth;
+static BOOL IsWritingDiagnostic;
+
+static NSString *ScopeName(void) {
+    switch (PreferencesScope) {
+        case SpoofScopeAboutOnly:
+            return @"about";
+        case SpoofScopeAppsOnly:
+            return @"apps";
+        case SpoofScopeBoth:
+            return @"both";
+    }
+    return @"unknown";
+}
+
+static void AppendDiagnostic(NSString *event) {
+    if (IsWritingDiagnostic || !event) {
+        return;
+    }
+
+    IsWritingDiagnostic = YES;
+    @autoreleasepool {
+        CFTypeRef existingValue = CFPreferencesCopyAppValue(
+            CFSTR("diagnosticLog"), kPreferencesDomain);
+        NSString *existing = existingValue &&
+            CFGetTypeID(existingValue) == CFStringGetTypeID()
+            ? (__bridge NSString *)existingValue
+            : @"";
+        NSString *process = [[NSProcessInfo processInfo] processName] ?: @"?";
+        NSString *line = [NSString stringWithFormat:@"%@ [%@] %@\n",
+            [NSDate date], process, event];
+        NSString *updated = [existing stringByAppendingString:line];
+        if ([updated length] > 12000) {
+            updated = [updated substringFromIndex:[updated length] - 12000];
+        }
+
+        CFPreferencesSetAppValue(CFSTR("diagnosticLog"),
+            (__bridge CFStringRef)updated, kPreferencesDomain);
+        CFPreferencesAppSynchronize(kPreferencesDomain);
+        if (existingValue) {
+            CFRelease(existingValue);
+        }
+    }
+    IsWritingDiagnostic = NO;
+}
 
 static void ReloadPreferences(void) {
     CFPreferencesAppSynchronize(kPreferencesDomain);
 
+    CFTypeRef initialized = CFPreferencesCopyAppValue(
+        CFSTR("initializedForVersion120"), kPreferencesDomain);
+    BOOL needsInitialization = !initialized ||
+        CFGetTypeID(initialized) != CFBooleanGetTypeID() ||
+        !CFBooleanGetValue((CFBooleanRef)initialized);
+    if (initialized) {
+        CFRelease(initialized);
+    }
+    BOOL isSettings = [[[NSBundle mainBundle] bundleIdentifier]
+        isEqualToString:@"com.apple.Preferences"];
+    if (needsInitialization && isSettings) {
+        CFPreferencesSetAppValue(CFSTR("enabled"), kCFBooleanFalse,
+                                 kPreferencesDomain);
+        CFPreferencesSetAppValue(CFSTR("initializedForVersion120"),
+                                 kCFBooleanTrue, kPreferencesDomain);
+        CFPreferencesAppSynchronize(kPreferencesDomain);
+    }
+
     CFTypeRef enabled = CFPreferencesCopyAppValue(CFSTR("enabled"),
                                                    kPreferencesDomain);
-    PreferencesEnabled = !enabled ||
+    PreferencesEnabled = enabled &&
         (CFGetTypeID(enabled) == CFBooleanGetTypeID() &&
          CFBooleanGetValue((CFBooleanRef)enabled));
     if (enabled) {
@@ -59,6 +121,9 @@ static void PreferencesChanged(CFNotificationCenterRef center, void *observer,
                                CFStringRef name, const void *object,
                                CFDictionaryRef userInfo) {
     ReloadPreferences();
+    AppendDiagnostic([NSString stringWithFormat:
+        @"preferences changed; enabled=%@ scope=%@",
+        PreferencesEnabled ? @"yes" : @"no", ScopeName()]);
 }
 
 static BOOL ShouldSpoofCurrentProcess(void) {
@@ -100,10 +165,25 @@ static BOOL SpoofedVersionIsAtLeast(NSOperatingSystemVersion requestedVersion) {
     return kSpoofedOperatingSystemVersion.patchVersion >= requestedVersion.patchVersion;
 }
 
+static BOOL LoggedUIDeviceHook;
+static BOOL LoggedOperatingSystemVersionHook;
+static BOOL LoggedOperatingSystemVersionStringHook;
+static BOOL LoggedAtLeastVersionHook;
+static BOOL LoggedMGCopyAnswerHook;
+static BOOL LoggedMGGetStringAnswerHook;
+static BOOL LoggedSystemVersionDictionaryHook;
+
 %hook UIDevice
 
 - (NSString *)systemVersion {
-    return ShouldSpoofCurrentProcess() ? kSpoofedVersion : %orig;
+    BOOL spoof = ShouldSpoofCurrentProcess();
+    if (!LoggedUIDeviceHook) {
+        LoggedUIDeviceHook = YES;
+        AppendDiagnostic([NSString stringWithFormat:
+            @"UIDevice.systemVersion called; spoof=%@",
+            spoof ? @"yes" : @"no"]);
+    }
+    return spoof ? kSpoofedVersion : %orig;
 }
 
 %end
@@ -111,15 +191,36 @@ static BOOL SpoofedVersionIsAtLeast(NSOperatingSystemVersion requestedVersion) {
 %hook NSProcessInfo
 
 - (NSOperatingSystemVersion)operatingSystemVersion {
-    return ShouldSpoofCurrentProcess() ? kSpoofedOperatingSystemVersion : %orig;
+    BOOL spoof = ShouldSpoofCurrentProcess();
+    if (!LoggedOperatingSystemVersionHook) {
+        LoggedOperatingSystemVersionHook = YES;
+        AppendDiagnostic([NSString stringWithFormat:
+            @"NSProcessInfo.operatingSystemVersion called; spoof=%@",
+            spoof ? @"yes" : @"no"]);
+    }
+    return spoof ? kSpoofedOperatingSystemVersion : %orig;
 }
 
 - (NSString *)operatingSystemVersionString {
-    return ShouldSpoofCurrentProcess() ? kSpoofedVersionString : %orig;
+    BOOL spoof = ShouldSpoofCurrentProcess();
+    if (!LoggedOperatingSystemVersionStringHook) {
+        LoggedOperatingSystemVersionStringHook = YES;
+        AppendDiagnostic([NSString stringWithFormat:
+            @"NSProcessInfo.operatingSystemVersionString called; spoof=%@",
+            spoof ? @"yes" : @"no"]);
+    }
+    return spoof ? kSpoofedVersionString : %orig;
 }
 
 - (BOOL)isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion)requestedVersion {
-    return ShouldSpoofCurrentProcess()
+    BOOL spoof = ShouldSpoofCurrentProcess();
+    if (!LoggedAtLeastVersionHook) {
+        LoggedAtLeastVersionHook = YES;
+        AppendDiagnostic([NSString stringWithFormat:
+            @"NSProcessInfo.isOperatingSystemAtLeastVersion called; spoof=%@",
+            spoof ? @"yes" : @"no"]);
+    }
+    return spoof
         ? SpoofedVersionIsAtLeast(requestedVersion)
         : %orig;
 }
@@ -130,6 +231,10 @@ static CFTypeRef ReplacedMGCopyAnswer(CFStringRef key) {
     if (ShouldSpoofCurrentProcess() && key &&
         CFGetTypeID(key) == CFStringGetTypeID()) {
         if (IsVersionKey(key)) {
+            if (!LoggedMGCopyAnswerHook) {
+                LoggedMGCopyAnswerHook = YES;
+                AppendDiagnostic(@"MGCopyAnswer version key called; spoof=yes");
+            }
             // MGCopyAnswer follows the Copy rule, so return an owned object.
             return CFRetain((__bridge CFStringRef)kSpoofedVersion);
         }
@@ -146,6 +251,10 @@ static CFStringRef ReplacedMGGetStringAnswer(CFStringRef key) {
     if (ShouldSpoofCurrentProcess() && key &&
         CFGetTypeID(key) == CFStringGetTypeID()) {
         if (IsVersionKey(key)) {
+            if (!LoggedMGGetStringAnswerHook) {
+                LoggedMGGetStringAnswerHook = YES;
+                AppendDiagnostic(@"MGGetStringAnswer version key called; spoof=yes");
+            }
             return (__bridge CFStringRef)kSpoofedVersion;
         }
 
@@ -166,6 +275,11 @@ static CFDictionaryRef ReplacedCFCopySystemVersionDictionary(void) {
         return original;
     }
 
+    if (!LoggedSystemVersionDictionaryHook) {
+        LoggedSystemVersionDictionaryHook = YES;
+        AppendDiagnostic(@"_CFCopySystemVersionDictionary called; spoof=yes");
+    }
+
     CFMutableDictionaryRef spoofed = original
         ? CFDictionaryCreateMutableCopy(kCFAllocatorDefault, 0, original)
         : CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
@@ -183,11 +297,16 @@ static CFDictionaryRef ReplacedCFCopySystemVersionDictionary(void) {
 }
 
 %ctor {
+    ReloadPreferences();
+    AppendDiagnostic([NSString stringWithFormat:
+        @"tweak loaded; bundle=%@ enabled=%@ scope=%@",
+        [[NSBundle mainBundle] bundleIdentifier] ?: @"?",
+        PreferencesEnabled ? @"yes" : @"no", ScopeName()]);
+
     // A custom constructor disables Logos' automatic default-group setup.
     // Initialize the UIDevice and NSProcessInfo hooks explicitly.
     %init;
-
-    ReloadPreferences();
+    AppendDiagnostic(@"Logos UIDevice/NSProcessInfo hooks initialized");
     CFNotificationCenterAddObserver(
         CFNotificationCenterGetDarwinNotifyCenter(), NULL, PreferencesChanged,
         kPreferencesChangedNotification, NULL,
@@ -219,6 +338,12 @@ static CFDictionaryRef ReplacedCFCopySystemVersionDictionary(void) {
         }
     }
 
+    AppendDiagnostic([NSString stringWithFormat:
+        @"MobileGestalt loaded=%@ MGCopyAnswer=%@ MGGetStringAnswer=%@",
+        MobileGestaltHandle ? @"yes" : @"no",
+        OriginalMGCopyAnswer ? @"hooked" : @"missing",
+        OriginalMGGetStringAnswer ? @"hooked" : @"missing"]);
+
     void *systemVersionDictionary =
         dlsym(RTLD_DEFAULT, "_CFCopySystemVersionDictionary");
     if (systemVersionDictionary) {
@@ -226,4 +351,7 @@ static CFDictionaryRef ReplacedCFCopySystemVersionDictionary(void) {
                        (void *)&ReplacedCFCopySystemVersionDictionary,
                        (void **)&OriginalCFCopySystemVersionDictionary);
     }
+    AppendDiagnostic([NSString stringWithFormat:
+        @"_CFCopySystemVersionDictionary=%@",
+        OriginalCFCopySystemVersionDictionary ? @"hooked" : @"missing"]);
 }

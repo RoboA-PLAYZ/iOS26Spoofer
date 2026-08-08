@@ -6,8 +6,8 @@
     CFBundleInfoDictionaryVersion = "6.0";
     CFBundleName = iOS26SpooferPrefs;
     CFBundlePackageType = BNDL;
-    CFBundleShortVersionString = "1.1.2";
+    CFBundleShortVersionString = "1.2.0";
     CFBundleSignature = "????";
-    CFBundleVersion = "1.1.2";
+    CFBundleVersion = "1.2.0";
     NSPrincipalClass = I26RootListController;
 }

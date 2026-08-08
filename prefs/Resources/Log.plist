@@ -1,0 +1,15 @@
+{
+    title = "Runtime Log";
+    items = (
+        {
+            cell = PSGroupCell;
+            label = "Recorded Events";
+            footerText = "No runtime events have been recorded yet.";
+        },
+        {
+            cell = PSButtonCell;
+            label = "Clear Log";
+            action = clearLog;
+        }
+    );
+}
