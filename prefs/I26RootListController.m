@@ -75,8 +75,9 @@ static void Respring(void) {
     if (!_specifiers) {
         _specifiers = [self loadSpecifiersFromPlistName:@"Log" target:self];
         if ([_specifiers count] > 0) {
-            [[_specifiers objectAtIndex:0]
-                setProperty:[self currentLogText] forKey:@"footerText"];
+            PSSpecifier *logGroup =
+                (PSSpecifier *)[_specifiers objectAtIndex:0];
+            [logGroup setProperty:[self currentLogText] forKey:@"footerText"];
         }
     }
     return _specifiers;
